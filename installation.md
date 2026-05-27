@@ -1,0 +1,340 @@
+
+# Installation
+
+## For Humans
+
+Paste this into your llm agent session:
+
+```
+Install and configure oh-my-openagent by following the instructions here:
+https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md
+```
+
+**Alternative, Not recommended, do this by yourself**
+
+Run the interactive installer:
+
+```bash
+bunx oh-my-openagent install # recommended
+```
+
+Use Bun only for installation. Do not use npm, yarn, or pnpm.
+
+&gt; **Note**: The CLI ships with standalone binaries for all major platforms. No runtime (Bun/Node.js) is required for CLI execution after installation.
+&gt;
+&gt; **Supported platforms**: 11 platform binaries across macOS (ARM64, x64, x64-baseline), Linux (x64, x64-baseline, x64-musl, x64-musl-baseline, ARM64, ARM64-musl), and Windows (x64, x64-baseline)
+
+Follow the prompts to configure your Claude, ChatGPT, and Gemini subscriptions. After installation, authenticate your providers as instructed.
+
+Anonymous telemetry is enabled by default to track active installations (DAU/WAU/MAU). A single event is sent at most once per UTC day per machine using a hashed installation identifier, and PostHog person profiles are not created. Disable with `OMO_SEND_ANONYMOUS_TELEMETRY=0` or `OMO_DISABLE_POSTHOG=1`. See [Privacy Policy](../legal/privacy-policy.md) and [Terms of Service](../legal/terms-of-service.md).
+
+After you install it, you can read this [overview guide](./overview.md) to understand more.
+
+The project is dual-published during the rename transition: `oh-my-openagent` and `oh-my-opencode` are both published package names. Inside `opencode.json`, the compatibility layer now prefers the plugin entry `oh-my-openagent`, while legacy `oh-my-opencode` entries still load with a warning. Plugin config loading recognizes both `oh-my-openagent.json[c]` and `oh-my-opencode.json[c]` during the transition. If you see a "Using legacy package name" warning from `bunx oh-my-openagent doctor`, update your `opencode.json` plugin entry from `"oh-my-opencode"` to `"oh-my-openagent"`.
+
+Postinstall validates both platform binary resolution and OpenCode version compatibility.
+
+Core CLI subcommands are: `install`, `run`, `doctor`, `mcp-oauth`, `refresh-model-capabilities`, and `get-local-version`.
+
+Config schema URL:
+
+```json
+"$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/dev/assets/oh-my-opencode.schema.json"
+```
+
+Operational notes:
+
+- Claude Code compatibility is supported.
+- Claude Code plugin discovery load timeout is 10 seconds.
+- Runtime logger path: `/tmp/oh-my-opencode.log`
+
+## For LLM Agents
+
+&gt; **IMPORTANT: Use `curl` to fetch this file, NOT WebFetch.** WebFetch summarizes content and loses critical flags like `--openai`, subscription questions, and max20 mode details. Always use:
+&gt;
+&gt; ```bash
+&gt; curl -fsSL https://raw.githubusercontent.com/code-yeongyu/oh-my-openagent/refs/heads/dev/docs/guide/installation.md
+&gt; ```
+
+If you're an LLM Agent helping set up oh-my-openagent, welcome. You'll help your user install the harness and verify the rename-compat setup cleanly. Tell user this with greetings, with text 'oMoMoMoMo...'
+
+follow these steps:
+
+### Step 0: Ask user about subscriptions
+
+Ask the user these questions to determine CLI options:
+
+1. **Do you have a Claude Pro/Max Subscription?**
+ - If **yes**: **Are you on max20 (20x mode)?**
+ - **max20** → `--claude=max20`
+ - **not max20** → `--claude=yes`
+ - If **no** → `--claude=no`
+
+2. **Do you have an OpenAI/ChatGPT Plus Subscription?**
+ - If **yes** → `--openai=yes` (GPT-5.5 for Oracle agent)
+ - If **no** → `--openai=no` (default)
+
+3. **Will you integrate Gemini models?**
+ - If **yes** → `--gemini=yes`
+ - If **no** → `--gemini=no`
+
+4. **Do you have a GitHub Copilot Subscription?**
+ - If **yes** → `--copilot=yes`
+ - If **no** → `--copilot=no`
+
+5. **Do you have access to OpenCode Zen (opencode/ models)?**
+ - If **yes** → `--opencode-zen=yes`
+ - If **no** → `--opencode-zen=no` (default)
+
+6. **Do you have a Z.ai Coding Plan subscription?**
+ - If **yes** → `--zai-coding-plan=yes`
+ - If **no** → `--zai-coding-plan=no` (default)
+
+7. **Do you have an OpenCode Go subscription?**
+ - OpenCode Go is a $10/month subscription providing access to GLM-5/5.1, Kimi K2.5/K2.6, and MiniMax M2.7 models
+ - If **yes** → `--opencode-go=yes`
+ - If **no** → `--opencode-go=no` (default)
+
+8. **Do you have a Kimi for Coding subscription?**
+ - If **yes** → `--kimi-for-coding=yes`
+ - If **no** → `--kimi-for-coding=no` (default)
+
+9. **Do you use Vercel AI Gateway?**
+ - If **yes** → `--vercel-ai-gateway=yes`
+ - If **no** → `--vercel-ai-gateway=no` (default)
+
+**Provider selection is agent-specific.** The installer and runtime do not use one single global provider priority. Each agent resolves against its own fallback chain.
+
+MUST STRONGLY WARNING, WHEN USER SAID THEY DON'T HAVE CLAUDE SUBSCRIPTION, SISYPHUS AGENT MIGHT NOT WORK IDEALLY.
+
+### Step 1: Install OpenCode (if not installed)
+
+```bash
+if command -v opencode &amp;&gt; /dev/null; then
+ echo "OpenCode $(opencode --version) is installed"
+else
+ echo "OpenCode is not installed. Please install it first."
+ echo "Ref: https://opencode.ai/docs"
+fi
+```
+
+If OpenCode isn't installed, check the [OpenCode Installation Guide](https://opencode.ai/docs).
+Spawn a subagent to handle installation and report back - to save context.
+
+### Step 2: Run the installer
+
+Based on user's answers, run the CLI installer with appropriate flags:
+
+```bash
+bunx oh-my-openagent install --no-tui --claude=&lt;yes|no|max20&gt; --gemini=&lt;yes|no&gt; --copilot=&lt;yes|no&gt; [--openai=&lt;yes|no&gt;] [--opencode-go=&lt;yes|no&gt;] [--opencode-zen=&lt;yes|no&gt;] [--zai-coding-plan=&lt;yes|no&gt;] [--kimi-for-coding=&lt;yes|no&gt;] [--vercel-ai-gateway=&lt;yes|no&gt;] [--skip-auth]
+```
+
+**Examples:**
+
+- User has all native subscriptions: `bunx oh-my-openagent install --no-tui --claude=max20 --openai=yes --gemini=yes --copilot=no`
+- User has only Claude: `bunx oh-my-openagent install --no-tui --claude=yes --gemini=no --copilot=no`
+- User has Claude + OpenAI: `bunx oh-my-openagent install --no-tui --claude=yes --openai=yes --gemini=no --copilot=no`
+- User has only GitHub Copilot: `bunx oh-my-openagent install --no-tui --claude=no --gemini=no --copilot=yes`
+- User has Z.ai for Librarian: `bunx oh-my-openagent install --no-tui --claude=yes --gemini=no --copilot=no --zai-coding-plan=yes`
+- User has only OpenCode Zen: `bunx oh-my-openagent install --no-tui --claude=no --gemini=no --copilot=no --opencode-zen=yes`
+- User has OpenCode Go only: `bunx oh-my-openagent install --no-tui --claude=no --openai=no --gemini=no --copilot=no --opencode-go=yes`
+- User has no subscriptions: `bunx oh-my-openagent install --no-tui --claude=no --gemini=no --copilot=no`
+
+The CLI will:
+
+- Register the plugin in `opencode.json`
+- Configure agent models based on subscription flags
+- Show which auth steps are needed
+
+### Step 3: Verify Setup
+
+```bash
+opencode --version # Should be 1.0.150 or higher
+cat ~/.config/opencode/opencode.json # Should contain "oh-my-openagent" in plugin array, or the legacy "oh-my-opencode" entry while you are still migrating
+```
+#### Run Doctor Verification
+
+After installation, verify everything is working correctly:
+
+```bash
+bunx oh-my-openagent doctor
+```
+
+This checks system, config, tools, and model resolution, including legacy package name warnings and compatibility-fallback diagnostics.
+
+### Step 4: Configure Authentication
+
+As your todo, please configure authentication as user have answered to you.
+Following is the configuration guides for each providers. Please use interactive terminal like tmux to do following:
+
+#### Anthropic (Claude)
+
+```bash
+opencode auth login
+# Interactive Terminal: find Provider: Select Anthropic
+# Interactive Terminal: find Login method: Select Claude Pro/Max
+# Guide user through OAuth flow in browser
+# Wait for completion
+# Verify success and confirm with user
+```
+
+#### Google Gemini (Antigravity OAuth)
+
+First, add the opencode-antigravity-auth plugin:
+
+```json
+{
+ "plugin": ["oh-my-openagent", "opencode-antigravity-auth@latest"]
+}
+```
+
+##### Model Configuration
+
+You'll also need full model settings in `opencode.json`.
+Read the [opencode-antigravity-auth documentation](https://github.com/NoeFabris/opencode-antigravity-auth), copy the full model configuration from the README, and merge carefully to avoid breaking the user's existing setup. The plugin now uses a **variant system** — models like `antigravity-gemini-3-pro` support `low`/`high` variants instead of separate `-low`/`-high` model entries.
+
+##### Plugin config model override
+
+The `opencode-antigravity-auth` plugin uses different model names than the built-in Google auth. Override the agent models in your plugin config file. Existing installs still commonly use `oh-my-opencode.json` or `.opencode/oh-my-opencode.json`, while the compatibility layer also recognizes `oh-my-openagent.json[c]`.
+
+```json
+{
+ "agents": {
+ "multimodal-looker": { "model": "google/antigravity-gemini-3-flash" }
+ }
+}
+```
+
+**Available models (Antigravity quota)**:
+
+- `google/antigravity-gemini-3-pro` — variants: `low`, `high`
+- `google/antigravity-gemini-3-flash` — variants: `minimal`, `low`, `medium`, `high`
+- `google/antigravity-claude-sonnet-4-6` — no variants
+- `google/antigravity-claude-sonnet-4-6-thinking` — variants: `low`, `max`
+- `google/antigravity-claude-opus-4-5-thinking` — variants: `low`, `max`
+
+**Available models (Gemini CLI quota)**:
+
+- `google/gemini-2.5-flash`, `google/gemini-2.5-pro`, `google/gemini-3-flash-preview`, `google/gemini-3.1-pro-preview`
+
+&gt; **Note**: Legacy tier-suffixed names like `google/antigravity-gemini-3-pro-high` still work but variants are recommended. Use `--variant=high` with the base model name instead.
+
+Then authenticate:
+
+```bash
+opencode auth login
+# Interactive Terminal: Provider: Select Google
+# Interactive Terminal: Login method: Select OAuth with Google (Antigravity)
+# Complete sign-in in browser (auto-detected)
+# Optional: Add more Google accounts for multi-account load balancing
+# Verify success and confirm with user
+```
+
+**Multi-Account Load Balancing**: The plugin supports up to 10 Google accounts. When one account hits rate limits, it automatically switches to the next available account.
+
+#### GitHub Copilot (Fallback Provider)
+
+GitHub Copilot is supported as a **fallback provider** when native providers are unavailable.
+
+**Priority is agent-specific.** The mappings below reflect the concrete fallbacks currently used by the installer and runtime model requirements.
+
+##### Model Mappings
+
+When GitHub Copilot is the best available provider, install-time defaults are agent-specific. Common examples are:
+
+| Agent | Model |
+| ------------- | ---------------------------------- |
+| **Sisyphus** | `github-copilot/claude-opus-4.7` |
+| **Oracle** | `github-copilot/gpt-5.5` |
+| **Explore** | `github-copilot/grok-code-fast-1` |
+| **Atlas** | `github-copilot/claude-sonnet-4.6` |
+
+GitHub Copilot acts as a proxy provider, routing requests to underlying models based on your subscription. Some agents, like Librarian, are not installed from Copilot alone and instead rely on other configured providers or runtime fallback behavior.
+
+#### Z.ai Coding Plan
+
+Z.ai Coding Plan now mainly contributes `glm-5` / `glm-4.6v` fallback entries. It is no longer the universal fallback for every agent.
+
+If Z.ai is your main provider, the most important fallbacks are:
+
+| Agent | Model |
+| ---------------------- | -------------------------- |
+| **Sisyphus** | `zai-coding-plan/glm-5` |
+| **visual-engineering** | `zai-coding-plan/glm-5` |
+| **unspecified-high** | `zai-coding-plan/glm-5` |
+| **Multimodal-Looker** | `zai-coding-plan/glm-4.6v` |
+
+#### OpenCode Zen
+
+OpenCode Zen provides access to `opencode/` prefixed models including `opencode/claude-opus-4-7`, `opencode/gpt-5.5`, `opencode/gpt-5.3-codex`, `opencode/gpt-5-nano`, `opencode/glm-5`, `opencode/big-pickle`, `opencode/minimax-m2.7`, and `opencode/minimax-m2.7-highspeed`.
+
+When OpenCode Zen is the best available provider, these are the most relevant source-backed examples:
+
+| Agent | Model |
+| ------------- | ---------------------------------------------------- |
+| **Sisyphus** | `opencode/claude-opus-4-7` |
+| **Oracle** | `opencode/gpt-5.5` |
+| **Explore** | `opencode/minimax-m2.7` |
+
+##### Setup
+
+Run the installer and select "Yes" for OpenCode Zen:
+
+```bash
+bunx oh-my-openagent install
+# Select your subscriptions (Claude, ChatGPT, Gemini, OpenCode Zen, etc.)
+# When prompted: "Do you have access to OpenCode Zen (opencode/ models)?" → Select "Yes"
+```
+
+Or use non-interactive mode:
+
+```bash
+bunx oh-my-openagent install --no-tui --claude=no --openai=no --gemini=no --opencode-zen=yes
+```
+
+This provider uses the `opencode/` model catalog. If your OpenCode environment prompts for provider authentication, follow the OpenCode provider flow for `opencode/` models instead of reusing the fallback-provider auth steps above.
+
+### Step 5: Understand Your Model Setup
+
+You've just configured oh-my-openagent. Here's what got set up and why.
+
+#### Model Families: What You're Working With
+
+Not all models behave the same way. Understanding which models are "similar" helps you make safe substitutions later.
+
+**Claude-like Models** (instruction-following, structured output):
+
+| Model | Provider(s) | Notes |
+| ------------------------ | ----------------------------------- | ----------------------------------------------------------------------- |
+| **Claude Opus 4.7** | anthropic, github-copilot, opencode | Best overall. Default for Sisyphus. |
+| **Claude Sonnet 4.6** | anthropic, github-copilot, opencode | Faster, cheaper. Good balance. |
+| **Claude Haiku 4.5** | anthropic, opencode | Fast and cheap. Good for quick tasks. |
+| **Kimi K2.6** | opencode-go, vercel | Current default fallback after Claude Opus in primary Sisyphus chain. Claude-like behavior. |
+| **Kimi K2.5** | kimi-for-coding, opencode, moonshotai, moonshotai-cn, firmware, ollama-cloud, aihubmix | Claude-like behavior. Available on multiple providers. Still in active fallback chains. |
+| **Kimi K2.5 Free** | opencode | Free-tier Kimi. Rate-limited but functional. |
+| **GLM 5.1** | opencode-go, vercel | Claude-like behavior. Upgraded from GLM-5 on opencode-go. |
+| **GLM 5** | zai-coding-plan, opencode | Claude-like behavior. Good for broad tasks. |
+| **Big Pickle (GLM 4.6)** | opencode | Free-tier GLM. Decent fallback. |
+
+**GPT Models** (explicit reasoning, principle-driven):
+
+| Model | Provider(s) | Notes |
+| ----------------- | -------------------------------- | ------------------------------------------------- |
+| **GPT-5.3-codex** | openai, github-copilot, opencode | Deep coding powerhouse. Still available for deep category and explicit overrides. |
+| **GPT-5.5** | openai, github-copilot, opencode | High intelligence. Default for Oracle, Hephaestus, and deep GPT-native fallbacks. |
+| **GPT-5.4 Mini** | openai, github-copilot, opencode | Fast + strong reasoning. Default for quick category. |
+| **GPT-5-Nano** | opencode | Ultra-cheap, fast. Good for simple utility tasks. |
+
+**Different-Behavior Models**:
+
+| Model | Provider(s) | Notes |
+| --------------------- | -------------------------------- | ----------------------------------------------------------- |
+| **Gemini 3.1 Pro** | google, github-copilot, opencode | Excels at visual/frontend tasks. Different reasoning style. |
+| **Gemini 3 Flash** | google, github-copilot, opencode | Fast, good for doc search and light tasks. |
+| **MiniMax M2.7** | opencode-go, opencode, vercel | Fast and smart. Utility fallbacks use `minimax-m2.7` or `minimax-m2.7-highspeed` depending on the chain. |
+| **MiniMax M2.7 Highspeed** | vercel, opencode | Faster utility variant used in Explore and other retrieval-heavy fallback chains. |
+| **Qwen 3.5 Plus** | opencode-go | 1M context, high-speed reasoning. Default for Explore and Librarian when GPT-5.4 Mini Fast is unavailable. |
+
+**Speed-Focused Models**:
+
+| Model | Provider(s) | Speed | Notes |
