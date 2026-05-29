@@ -12,7 +12,9 @@ export default function Dashboard() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editTransaction, setEditTransaction] = useState<Transaction | null>(null);
   const [isRecording, setIsRecording] = useState(false);
-  const [voiceText, setVoiceText] = useState('');
+  const [recognitionReady, setRecognitionReady] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState('');
+  const finalTranscriptRef = useRef('');
   const recognitionRef = useRef<any>(null);
   const transactions = useAppStore((state) => state.transactions);
 
@@ -20,30 +22,80 @@ export default function Dashboard() {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition();
-        recognitionRef.current.continuous = false;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'zh-CN';
+        try {
+          recognitionRef.current = new SpeechRecognition();
+          recognitionRef.current.continuous = false;
+          recognitionRef.current.interimResults = true;
+          recognitionRef.current.lang = 'zh-CN';
 
-        recognitionRef.current.onresult = (event: any) => {
-          let transcript = '';
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            transcript += event.results[i][0].transcript;
-          }
-          setVoiceText(transcript);
-        };
+          recognitionRef.current.onresult = (event: any) => {
+            let interimTranscript = '';
+            let finalTranscript = '';
+            
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              if (event.results[i].isFinal) {
+                finalTranscript += event.results[i][0].transcript;
+              } else {
+                interimTranscript += event.results[i][0].transcript;
+              }
+            }
+            
+            if (finalTranscript) {
+              finalTranscriptRef.current = finalTranscript;
+              setCurrentTranscript(finalTranscript);
+            } else {
+              setCurrentTranscript(interimTranscript);
+            }
+          };
 
-        recognitionRef.current.onend = () => {
-          setIsRecording(false);
-        };
+          recognitionRef.current.onend = () => {
+            setIsRecording(false);
+            if (finalTranscriptRef.current.trim()) {
+              handleVoiceResult(finalTranscriptRef.current);
+            }
+            finalTranscriptRef.current = '';
+            setCurrentTranscript('');
+          };
 
-        recognitionRef.current.onerror = (event: any) => {
-          console.error('语音识别错误:', event.error);
-          setIsRecording(false);
-        };
+          recognitionRef.current.onerror = (event: any) => {
+            console.error('语音识别错误:', event.error);
+            setIsRecording(false);
+            setCurrentTranscript('');
+            finalTranscriptRef.current = '';
+            let errorMsg = '语音识别出错了';
+            if (event.error === 'not-allowed') {
+              errorMsg = '请允许麦克风权限';
+            } else if (event.error === 'no-speech') {
+              errorMsg = '没有听到声音，请再试一次';
+            }
+            alert(errorMsg);
+          };
+
+          recognitionRef.current.onstart = () => {
+            setIsRecording(true);
+          };
+
+          setRecognitionReady(true);
+        } catch (e) {
+          console.error('初始化语音识别失败:', e);
+          setRecognitionReady(false);
+        }
       }
     }
   }, []);
+
+  const handleVoiceResult = (text: string) => {
+    if (!text.trim()) return;
+    const parsed = parseVoiceText(text);
+    if (parsed) {
+      setEditTransaction(null);
+      setIsFormOpen(true);
+      setTimeout(() => {
+        const event = new CustomEvent('voice-transaction', { detail: parsed });
+        window.dispatchEvent(event);
+      }, 100);
+    }
+  };
 
   const handleAddTransaction = () => {
     setEditTransaction(null);
@@ -59,21 +111,33 @@ export default function Dashboard() {
   };
 
   const handleVoiceRecord = () => {
-    if (!recognitionRef.current) {
-      alert('抱歉，您的浏览器不支持语音识别功能，建议使用 Chrome 浏览器');
+    if (!recognitionReady) {
+      alert('抱歉，您的浏览器不支持语音识别功能，建议使用 Chrome 或 Edge 浏览器');
       return;
     }
 
     if (isRecording) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.error('停止录音失败:', e);
+        setIsRecording(false);
+        if (finalTranscriptRef.current.trim()) {
+          handleVoiceResult(finalTranscriptRef.current);
+        }
+        finalTranscriptRef.current = '';
+        setCurrentTranscript('');
+      }
     } else {
-      setVoiceText('');
+      finalTranscriptRef.current = '';
+      setCurrentTranscript('');
       setIsRecording(true);
       try {
         recognitionRef.current.start();
       } catch (e) {
-        console.error(e);
+        console.error('启动录音失败:', e);
         setIsRecording(false);
+        alert('启动录音失败，请刷新页面重试');
       }
     }
   };
@@ -110,21 +174,6 @@ export default function Dashboard() {
     navigate('/import');
   };
 
-  useEffect(() => {
-    if (voiceText && !isRecording) {
-      const parsed = parseVoiceText(voiceText);
-      if (parsed) {
-        setEditTransaction(null);
-        setIsFormOpen(true);
-        setTimeout(() => {
-          const event = new CustomEvent('voice-transaction', { detail: parsed });
-          window.dispatchEvent(event);
-        }, 100);
-      }
-      setVoiceText('');
-    }
-  }, [voiceText, isRecording]);
-
   return (
     <div className="min-h-screen pb-20">
       <header className="bg-gradient-to-r from-cute-pink to-cute-orange text-white px-6 py-8 rounded-b-cute-xl shadow-cute-lg">
@@ -136,6 +185,12 @@ export default function Dashboard() {
           <div className="text-4xl animate-float">💖</div>
         </div>
       </header>
+
+      {isRecording && (
+        <div className="fixed inset-x-0 top-0 bg-yellow-400 text-yellow-900 px-4 py-3 z-50 flex items-center justify-center">
+          <span className="text-lg">🎤 正在听... {currentTranscript}</span>
+        </div>
+      )}
 
       <main className="px-4 py-6 space-y-6 max-w-md mx-auto">
         <OverviewCard />
