@@ -1,13 +1,8 @@
 node_modules/
-.DS_Store
 dist/
-build/
+.DS_Store
 .env
 .env.local
-*.log
-.vscode/
-.idea/
-__pycache__/
-*.pyc
-.next/
+.env.production
 coverage/
+*.log
