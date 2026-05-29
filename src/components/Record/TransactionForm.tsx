@@ -3,8 +3,8 @@ import { X, Check } from 'lucide-react';
 import CuteButton from '../common/CuteButton';
 import CategorySelector from './CategorySelector';
 import useAppStore from '@/stores/useAppStore';
-import { getToday, autoCategorize, getCategoryById, categories } from '@/utils/helpers';
-import type { Transaction } from '@/types';
+import { getToday, autoCategorize, getCategoryById, getCategoriesByType } from '@/utils/helpers';
+import type { Transaction, Category } from '@/types';
 
 interface TransactionFormProps {
   isOpen: boolean;
@@ -58,11 +58,12 @@ export default function TransactionForm({ isOpen, onClose, editTransaction }: Tr
       setAmount(data.amount.toString());
       setDescription(data.description);
       
-      const matchingCategory = categories.find(cat => 
+      const categories = getCategoriesByType(data.type);
+      const matchingCategory = categories.find((cat: Category) => 
         cat.name.includes(data.category) || 
-        data.category.includes(cat.name) ||
-        cat.type === data.type
-      );
+        data.category.includes(cat.name)
+      ) || categories[0];
+      
       if (matchingCategory) {
         setCategoryId(matchingCategory.id);
       }
