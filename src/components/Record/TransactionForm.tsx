@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, Check } from 'lucide-react';
 import CuteButton from '../common/CuteButton';
 import CategorySelector from './CategorySelector';
 import useAppStore from '@/stores/useAppStore';
-import { getToday, autoCategorize, getCategoryById } from '@/utils/helpers';
+import { getToday, autoCategorize, getCategoryById, categories } from '@/utils/helpers';
 import type { Transaction } from '@/types';
 
 interface TransactionFormProps {
@@ -50,6 +50,31 @@ export default function TransactionForm({ isOpen, onClose, editTransaction }: Tr
       }
     }
   }, [description, type, settings.autoCategorize]);
+
+  const handleVoiceData = useCallback((event: any) => {
+    const data = event.detail;
+    if (data) {
+      setType(data.type);
+      setAmount(data.amount.toString());
+      setDescription(data.description);
+      
+      const matchingCategory = categories.find(cat => 
+        cat.name.includes(data.category) || 
+        data.category.includes(cat.name) ||
+        cat.type === data.type
+      );
+      if (matchingCategory) {
+        setCategoryId(matchingCategory.id);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('voice-transaction', handleVoiceData);
+    return () => {
+      window.removeEventListener('voice-transaction', handleVoiceData);
+    };
+  }, [handleVoiceData]);
 
   const handleSubmit = () => {
     if (!amount || !categoryId) {

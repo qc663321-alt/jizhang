@@ -34,7 +34,7 @@ export default function QuickActions({ onAddTransaction, onVoiceRecord, onSmartI
         <button
           key={action.label}
           onClick={action.onClick}
-          className={`cute-icon-btn bg-gradient-to-br ${action.color} text-white shadow-lg hover:shadow-xl flex flex-col items-center gap-1 h-auto py-5`}
+          className={`cute-icon-btn bg-gradient-to-br ${action.color} text-white shadow-lg hover:shadow-xl flex flex-col items-center gap-1 h-auto py-5 transition-transform active:scale-95`}
         >
           {action.icon}
           <span className="text-xs">{action.label}</span>
