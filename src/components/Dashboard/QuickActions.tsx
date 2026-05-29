@@ -29,19 +29,17 @@ export default function QuickActions({ onAddTransaction, onVoiceRecord, onSmartI
   ];
 
   return (
-    <div className="flex justify-center w-full">
-      <div className="grid grid-cols-3 gap-4 max-w-sm w-full">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            onClick={action.onClick}
-            className={`cute-icon-btn bg-gradient-to-br ${action.color} text-white shadow-lg hover:shadow-xl flex flex-col items-center gap-1 h-auto py-5`}
-          >
-            {action.icon}
-            <span className="text-xs">{action.label}</span>
-          </button>
-        ))}
-      </div>
+    <div className="grid grid-cols-3 gap-4 w-full">
+      {actions.map((action) => (
+        <button
+          key={action.label}
+          onClick={action.onClick}
+          className={`cute-icon-btn bg-gradient-to-br ${action.color} text-white shadow-lg hover:shadow-xl flex flex-col items-center gap-1 h-auto py-5`}
+        >
+          {action.icon}
+          <span className="text-xs">{action.label}</span>
+        </button>
+      ))}
     </div>
   );
 }
